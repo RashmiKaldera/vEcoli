@@ -39,3 +39,16 @@ polymerized_ntp_ids = bulk_name_to_idx(
     ],
     bulk_molecule_ids,
 )
+# %%
+rna_data = sim_data.process.transcription.rna_data
+
+mrna_tu_ids = rna_data["id"][rna_data["is_mRNA"]].tolist()
+
+cistron_data = sim_data.process.transcription.cistron_data
+
+mrna_cistron_ids = cistron_data["id"][cistron_data["is_mRNA"]].tolist()
+
+mrna_df = pd.DataFrame(mrna_cistron_ids, columns=["cistron_id"])
+
+# %%
+rnaA_id = bulk_name_to_idx(["PD03831[c]", "MONOMER0-160[c]"], bulk_molecule_ids)
