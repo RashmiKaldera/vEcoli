@@ -52,3 +52,63 @@ mrna_df = pd.DataFrame(mrna_cistron_ids, columns=["cistron_id"])
 
 # %%
 rnaA_id = bulk_name_to_idx(["PD03831[c]", "MONOMER0-160[c]"], bulk_molecule_ids)
+
+# %%
+nucleotide_pathways = {
+    "adenosine deoxyribonucleotides de novo biosynthesis II": {
+        "RXN0-747",
+        "ADPREDUCT-RXN",
+        "DADPKIN-RXN",
+        "RXN0-745",
+    },
+    "guanosine deoxyribonucleotides de novo biosynthesis II": {
+        "RXN0-748",
+        "GDPREDUCT-RXN",
+        "DGDPKIN-RXN",
+        "RXN0-746",
+    },
+    "pyrimidine deoxyribonucleotides de novo biosynthesis II": {
+        "RXN0-723",
+        "DCTP-DEAM-RXN",
+        "RXN0-724",
+        "DUTP-PYROP-RXN",
+        "THYMIDYLATESYN-RXN",
+        "DTMPKI-RXN",
+        "DTDPKIN-RXN",
+    },
+    "pyrimidine deoxyribonucleotides de novo biosynthesis I": {
+        "RXN-12195",
+        "CDPREDUCT-RXN",
+        "DCDPKIN-RXN",
+        "UDPREDUCT-RXN",
+        "DUDPKIN-RXN",
+        "DUTP-PYROP-RXN",
+        "THYMIDYLATESYN-RXN",
+        "DTMPKI-RXN",
+        "DTDPKIN-RXN",
+    },
+}
+
+keys = list(sim_data.process.metabolism.reaction_stoich.keys())
+
+
+def base_id(k):
+    return k.split(" (")[0]
+
+
+grouped = {
+    pathway: {rxn: i for i, k in enumerate(keys) if (rxn := base_id(k)) in reactions}
+    for pathway, reactions in nucleotide_pathways.items()
+}
+# %%
+replisome_subunits = bulk_name_to_idx(
+    [
+        "CPLX0-3621[c]",
+        "EG10239-MONOMER[c]",
+        "EG11500-MONOMER[c]",
+        "EG11412-MONOMER[c]",
+        "CPLX0-2361[c]",
+        "CPLX0-3761[c]",
+    ],
+    bulk_molecule_ids,
+)
