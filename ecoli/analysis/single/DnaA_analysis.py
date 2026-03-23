@@ -229,3 +229,158 @@ def plot(
 
     # Save or display
     chart6.save(os.path.join(outdir, "DnaA_counts.html"))
+
+    # Full chromosome counts
+    query7 = f"""
+                               SELECT time, listeners__unique_molecule_counts__full_chromosome
+                               FROM ({history_sql})
+                               ORDER BY time ASC
+                               """
+
+    output_df7 = conn.sql(query7).df()
+    # Convert time from seconds to minutes
+    output_df7["Time (min)"] = output_df7["time"] / 60
+
+    # Create Altair line chart
+    chart7 = (
+        alt.Chart(output_df7)
+        .mark_line()
+        .encode(
+            x=alt.X("Time (min):Q", title="Time (min)"),
+            y=alt.Y(
+                "listeners__unique_molecule_counts__full_chromosome:Q",
+                title="Full chromosome counts",
+            ),
+        )
+        .properties(
+            title="Count of Full Chromosomes Over Time",
+            width=600,
+            height=400,
+        )
+    )
+
+    html_path7 = os.path.join(outdir, "fullchromosomecounts.html")
+    chart7.save(html_path7)
+
+    # active replisomes
+    query8 = f"""
+                                   SELECT time, listeners__unique_molecule_counts__active_replisome
+                                   FROM ({history_sql})
+                                   ORDER BY time ASC
+                                   """
+
+    output_df8 = conn.sql(query8).df()
+    # Convert time from seconds to minutes
+    output_df8["Time (min)"] = output_df8["time"] / 60
+
+    # Create Altair line chart
+    chart8 = (
+        alt.Chart(output_df8)
+        .mark_line()
+        .encode(
+            x=alt.X("Time (min):Q", title="Time (min)"),
+            y=alt.Y(
+                "listeners__unique_molecule_counts__active_replisome:Q",
+                title="Active replisome counts",
+            ),
+        )
+        .properties(
+            title="Count of Active Replisomes Over Time",
+            width=600,
+            height=400,
+        )
+    )
+
+    html_path8 = os.path.join(outdir, "activereplisomecounts.html")
+    chart8.save(html_path8)
+
+    # Prepare free + total box dfs
+    free_df = output_df2[
+        ["Time (min)", "listeners__replication_data__free_DnaA_boxes"]
+    ].copy()
+    free_df.columns = ["Time (min)", "Counts"]
+    free_df["Type"] = "Free DnaA boxes"
+
+    total_df = output_df3[
+        ["Time (min)", "listeners__replication_data__total_DnaA_boxes"]
+    ].copy()
+    total_df.columns = ["Time (min)", "Counts"]
+    total_df["Type"] = "Total DnaA boxes"
+
+    # DnaA protein already melted
+    dnaA_df = melted_DnaA_df.copy()
+    dnaA_df.columns = ["Time (min)", "Type", "Counts"]
+
+    # Combine all
+    top_df = pd.concat([dnaA_df, free_df, total_df], ignore_index=True)
+
+    top_chart = (
+        alt.Chart(top_df)
+        .mark_line()
+        .encode(
+            x=alt.X("Time (min):Q"),
+            y=alt.Y("Counts:Q", title="Counts"),
+            color=alt.Color("Type:N", scale=alt.Scale(range=COLORS)),
+        )
+        .properties(
+            title="DnaA Dynamics and DnaA Box Availability",
+            width=700,
+            height=300,
+        )
+    )
+
+    ori_df = output_df4[
+        ["Time (min)", "listeners__unique_molecule_counts__oriC"]
+    ].copy()
+    ori_df.columns = ["Time (min)", "Counts"]
+    ori_df["Type"] = "oriC"
+
+    chrom_df = output_df7[
+        ["Time (min)", "listeners__unique_molecule_counts__full_chromosome"]
+    ].copy()
+    chrom_df.columns = ["Time (min)", "Counts"]
+    chrom_df["Type"] = "Full chromosomes"
+
+    repl_df = output_df8[
+        ["Time (min)", "listeners__unique_molecule_counts__active_replisome"]
+    ].copy()
+    repl_df.columns = ["Time (min)", "Counts"]
+    repl_df["Type"] = "Active replisomes"
+
+    bottom_df = pd.concat([ori_df, chrom_df, repl_df], ignore_index=True)
+
+    bottom_chart = (
+        alt.Chart(bottom_df)
+        .mark_line()
+        .encode(
+            x=alt.X("Time (min):Q"),
+            y=alt.Y("Counts:Q", title="Counts"),
+            color=alt.Color("Type:N", scale=alt.Scale(range=COLORS)),
+            strokeDash=alt.StrokeDash(
+                "Type:N",
+                scale=alt.Scale(
+                    domain=["Full chromosomes", "oriC", "Active replisomes"],
+                    range=[
+                        [1, 0],  # chromosomes → solid
+                        [4, 2],  # oriC → dashed
+                        [1, 2],  # replisomes → dotted
+                    ],
+                ),
+                legend=None,
+            ),
+        )
+        .properties(
+            title="Replication State Dynamics",
+            width=700,
+            height=300,
+        )
+    )
+
+    final_chart = (
+        alt.vconcat(top_chart, bottom_chart)
+        .configure_axis(labelFontSize=14, titleFontSize=16)
+        .configure_legend(titleFontSize=14, labelFontSize=12)
+        .configure_title(fontSize=18, anchor="start")
+    )
+
+    final_chart.save(os.path.join(outdir, "combined_replication_figure.html"))
